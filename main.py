@@ -30,3 +30,5 @@ async def ping(ctx):
     await ctx.send('ping!')
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
+
+#Check
