@@ -13,9 +13,12 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
+embed_image = "https://i.postimg.cc/XYZKSJYw/img-2026-06-15-23-29-39-Photoroom.png"
+embed_color = discord.Colour(0).from_str("0x8a2b44")
 
 # Roles y necesidades específicas de configuraciones previas.
 cultista_id = 1511176662195245209
+noctista_id = 1511176220916715600
 
 class MyBot(commands.Bot):
     async def on_ready(self):
@@ -34,13 +37,6 @@ class MyBot(commands.Bot):
         if message.channel.id == 1511177456252620911:
              await asignar_cultista(message)
 
-        # Retransmitir mi mensaje de un canal secreto a otro distinto. Si cumple la sintaxis,
-        # separa en dos el mensaje: el canal al que debe ir, y el conttenido que enviar.
-        elif message.channel.id == 1513025537331953716:
-             enviar_mensaje_desde_susurro(message)
-            
-
-
         print(f'Message from {message.author}: {message.content}')
 
         await self.process_commands(message)
@@ -58,10 +54,16 @@ bot = MyBot(command_prefix='⛧', intents=intents)
 
 @bot.command()
 async def ping(ctx):
+    """ Ping para comprobar que el bot funciona.
+    """
     await ctx.send('pong!')
 
-@bot.command() # Comando para tirar dados. Recibe la tirada en formato "(Número de dados)d(Caras de cada dado) + (Valor a sumar/restar), sin importar los espacios.
+@bot.command() 
 async def roll(ctx, *, arg):
+    """ Comando para tirar dados. 
+    Recibe la tirada en formato: (Número de dados)d(Caras de cada dado) + (Valor a sumar/restar)
+    Independiente de los espacios.
+    """
 
     # Este regex parte en cuatro grupos el argumento del comando:
     # Grupo 1: Número de dados.
@@ -86,7 +88,7 @@ async def roll(ctx, *, arg):
             inmediato = 0
 
     else:
-        print("Comando mal usado...")
+        print("Runa mal trazada...")
         return
     
     # En el caso de que todo salga bien, se envía este mensaje, y tras ello, tantas veces como dados se hayan tirado, se escriben.
@@ -99,6 +101,55 @@ async def roll(ctx, *, arg):
         mostrar_resultado = f"⛧ {resultado}" if  inmediato == 0 else (f"⛧ {resultado} + {inmediato} = {resultado+inmediato}" if inmediato > 0 else f"⛧ {resultado} - {-1*inmediato} = {resultado+inmediato}")
         await ctx.send(mostrar_resultado)
         
+@bot.command()
+async def whisp(ctx, *, arg):
+    """ Envía un mensaje en cualquier canal.
+        Admite un id de canal y un mensaje.
+        ⛧whisp 132473298 string
+    """
+    print(ctx.author.roles)
+    if noctista_id in [x.id for x in ctx.author.roles]:
+        canal, mensaje = arg.split(" ", 1)
+        await ctx.guild.get_channel(int(canal)).send(mensaje)
+
+@bot.command()
+async def p(ctx):
+
+    """ Define un prototipo estándar de cómo será la mayoría de hechizos.
+    """
+    
+    dados = 6
+    caras = 34
+    inmediato = 0
+    
+    embed_title = " "
+    flavortext = "__Kýrie, eléison, christe eléison__"
+    embed_flavortext = "⠀\n\n" + flavortext +" \n" + f"`{dados}d{caras}`"
+
+    for i in range(dados):
+        resultado = randint(dados, caras)
+        mostrar_resultado = f" ⛧ {resultado}" if  inmediato == 0 else (f"⛧ {resultado} + {inmediato} = {resultado+inmediato}" if inmediato > 0 else f"⛧ {resultado} - {-1*inmediato} = {resultado+inmediato}")
+        embed_flavortext += mostrar_resultado
+
+    embed_test = discord.Embed(title=embed_title, description=embed_flavortext, color=embed_color).set_thumbnail(url=embed_image)
+
+
+    # await ctx.send(flavortext)
+    # await ctx.send(mostrar_resultado)
+    await ctx.send(embed=embed_test)
+
+@bot.command()
+async def respuesta(ctx, *, arg):
+    
+    if arg.lower() == "tres" or arg == "3":
+        embed_color = discord.Colour(0).from_str("0x8a2b44")
+        embed_respuesta = discord.Embed(title="Divinación", description="*Exitosa.*", color=embed_color).set_thumbnail(url=embed_image)
+        await ctx.send(embed=embed_respuesta)
+    else:
+        embed_color = discord.Colour(0).from_str("0x8a2b44")
+        embed_respuesta = discord.Embed(title="Divinación", description="*Fallida.*", color=embed_color).set_thumbnail(url=embed_image)
+        await ctx.send(embed=embed_respuesta)
+
 # Comandos auxiliares.
 
 async def asignar_cultista(message):
@@ -113,15 +164,6 @@ async def asignar_cultista(message):
                     print("Error de jerarquía de roles o bien de HTTPS")
             else:
                 print("El rol no existe")
-
-async def enviar_mensaje_desde_susurro(message):
-    if "⛧" in message.content:   
-        try: 
-            # Es improtanate convertir el canal en int, se saca como str.
-            canal_a_enviar, mensaje_a_enviar = message.content.split("⛧")
-            await message.guild.get_channel(int(canal_a_enviar)).send(mensaje_a_enviar)
-        except Exception as e:
-            print(e)
 
 
 bot.run(token, log_handler=handler, log_level=logging.DEBUG)
